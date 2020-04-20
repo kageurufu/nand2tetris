@@ -42,5 +42,33 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+        Mux16(a=x, b=false, sel=zx, out=zeroedX);
+        Not16(in=zeroedX, out=notZeroedX);
+        Mux16(a=zeroedX, b=notZeroedX, sel=nx, out=readyX);
+
+        Mux16(a=y, b=false, sel=zy, out=zeroedY);
+        Not16(in=zeroedY, out=notZeroedY);
+        Mux16(a=zeroedY, b=notZeroedY, sel=ny, out=readyY);
+
+        And16(a=readyX, b=readyY, out=andXY);
+        Add16(a=readyX, b=readyY, out=addXY);
+
+        Mux16(a=andXY, b=addXY, sel=f, out=tempOut);
+
+        Not16(in=tempOut, out=notOut);
+        
+        // buffer final value for register calculations 
+        Mux16(a=tempOut, b=notOut, sel=no, out[0..7]=outBufferLow, out[8..14]=outBufferHigh, out[15]=outBufferNegative);
+
+        // map outBuffer to out
+        Or16(a[0..7]=outBufferLow, a[8..14]=outBufferHigh, a[15]=outBufferNegative, b=false, out=out);
+
+        // zr
+        Or8Way(in=outBufferLow, out=anyOutBit0);
+        Or8Way(in[0..6]=outBufferHigh, in[7]=outBufferNegative, out=anyOutBit1);
+        Or(a=anyOutBit0, b=anyOutBit1, out=anyOutBit);
+        Not(in=anyOutBit, out=zr);
+
+        // ng
+        And(a=outBufferNegative, b=true, out=ng);
 }
